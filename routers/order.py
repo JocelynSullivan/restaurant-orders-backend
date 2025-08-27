@@ -8,38 +8,9 @@ router = APIRouter()
 
 ### GET ###
 
-@router.get("/orders")
-async def get_orders(db: Session = Depends(get_db)) -> list[dict]:
-    statement = (
-        select(Order, OrderItem, MenuItem, Customer)
-        .join(OrderItem, OrderItem.order_id == Order.id)
-        .join(MenuItem, MenuItem.id == OrderItem.menu_item_id)
-        .join(Customer, Customer.id == Order.customer_id)
-    )
+# @router.get("/orders")
+# async def get_orders(db: Session = Depends(get_db)) -> list[dict]:
 
-    results = db.exec(select(statement)).all()
-   
-    orders: dict[int, dict] = {}
-    for order, item, menu, customer in results:
-        if order.id not in orders:
-            orders[order.id] = {
-                "id": order.id,
-                "customer": customer.name,
-                "status": order.status,
-                "order_date": order.order_date,
-                "items":[]
-            }
-        orders[order.id]["items"].append({
-            "id: item.id, "
-            "quantity": item.quantity,
-            "menu_item": {
-                "id": menu.id,
-                "name": menu.name,
-                "description": menu.description,
-                "price": menu.price,
-            }
-            })
-    return list(order.values())
 
 @router.get("/order_items/{order_items}")
 async def get_order_items(order_items: str, db: Session = Depends(get_db)) -> list [OrderItem]:
