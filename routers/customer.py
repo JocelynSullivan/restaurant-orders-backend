@@ -13,7 +13,7 @@ async def get_customers(db: Session = Depends(get_db)) -> list[Customer]:
     return db.exec(select(Customer)).all()
 
 @router.get("/customers/{id}")
-async def get_customer(db: Session = Depends(get_db)) -> Customer:
+async def get_customer(id: int, db: Session = Depends(get_db)) -> Customer:
     customer: Customer | None = db.get(Customer, id)
     if customer is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Customer with ID {id} not found.")
@@ -27,7 +27,7 @@ async def create_customer(create_customer_request: CreateCustomerRequest, db: Se
     db.add(customer)
     db.commit()
     db.refresh(customer)
-    return customer.id
+    return customer
 
 ### DELETE ###
 
