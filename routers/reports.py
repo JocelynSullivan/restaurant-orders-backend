@@ -30,7 +30,7 @@ async def get_revenue_per_day(db: Session = Depends(get_db)) -> list[GetRevenueP
     revenue_per_day: list[GetRevenuePerDay] = []
 
     for result in results:
-        revenue_per_day.append(GetRevenuePerDay(date=str(result[0], total_revenue=float(result[1]))))
+        revenue_per_day.append(GetRevenuePerDay(date=str(result[0]), total_revenue=float(result[1])))
 
     return revenue_per_day
 
@@ -46,12 +46,13 @@ async def get_best_selling_item(db: Session = Depends(get_db)) -> GetBestSelling
             .limit(1)
     )
 
-    result = db.exec(statement).all()
+    results = db.exec(statement).all()
 
-    if not result:
+    if not results:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No sales data found.")
     
-    return GetBestSellingItem(menu_item_id=result[0], item=result[1], quantity=result[2])
+    for result in results:
+        return GetBestSellingItem(menu_item_id=result[0], item=result[1], quantity=result[2])
 
 
 ### Orders Per Customer ###

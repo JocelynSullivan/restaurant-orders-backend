@@ -8,29 +8,73 @@ router = APIRouter()
 
 ### GET ###
 
-# @router.get("/orders")
-# async def get_orders(db: Session = Depends(get_db)) -> list[dict]:
-#     statement = (
-#         select(Order, OrderItem, MenuItems, Customer)
-#         .join(OrderItem, OrderItem.id == Order.id)
-#         .join(MenuItems, MenuItems.id == OrderItem.menu_item_id)
-#         .join(Customer, Customer.id == Order.customer_id)
-#     )
+@router.get("/orders")
+async def get_orders(db: Session = Depends(get_db)) -> list[dict]:
+    statement = (
+        select(Order, OrderItem, MenuItems, Customer)
+        .join(OrderItem, OrderItem.id == Order.id)
+        .join(MenuItems, MenuItems.id == OrderItem.menu_item_id)
+        .join(Customer, Customer.id == Order.customer_id)
+    )
 
-#     # results = db.exec(statement).all()
+    results = db.exec(statement).all()
 
-#     # orders: dict[int, dict] = {}
-#     # for order, item, menu, customer in results:
-#     #     if order.id not in orders:
-#     #         orders[order.id] = {
+    orders: dict[int, dict] = {}
+    for order, item, menu, customer in results:
+        if order.id not in orders:
+            orders[order.id] = {
+                "id": order.id,
+                "customer": customer.name,
+                "status": order.status,
+                "order_date": order.order_date,
+                "items": []
+            }
+        orders[order.id]["items"].append({
+            "id": item.id,
+            "quantity": item.quantity,
+            "menu_item": {
+                "id": menu.id,
+                "name": customer.name,
+                "price": menu.price,
+            }    
+        })
+    return list(orders.values())
 
-#     #         }
-#     return statement
 
+@router.get("/orders/{id}")
+async def get_order(id: int, db: Session = Depends(get_db)) -> dict:
+    statement = (
+        select(Order, OrderItem, MenuItems, Customer)
+        .join(OrderItem, OrderItem.order_id == Order.id)
+        .join(MenuItems, MenuItems.id == OrderItem.menu_item_id)
+        .join(Customer, Customer.id == Order.customer_id)
+        .where(Order.id == id)
+    )
 
-# @router.get("/orders/{id}")
-# async def get_order(id: int, db: Session = Depends(get_db)) -> dict:
+    results = db.exec(statement).all()
+    
+    if not results:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Order with ID {id} not found.")
 
+    order_data = {
+        "id": results[0][0].id,
+        "customer": results[0][3].name,
+        "status": results[0][0].status,
+        "order_date": results[0][0].order_date,
+        "items": []
+    }
+
+    for order, item, menu, customer in results:
+        order_data["items"].append({
+            "id": item.id,
+            "quantity": item.quantity,
+            "menu_item": {
+                "id": menu.id,
+                "name": menu.name,
+                "price": menu.price
+            }
+        })
+    return order_data
 
 ### POST ###
 
@@ -41,7 +85,8 @@ async def create_order(create_order_request: CreateOrderRequest, db: Session = D
     for i in create_order_request.items:
         menu: MenuItems | None = db.get(MenuItems, i.menu_item_id)
         if menu is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Menu item with ID {create_order_request.menu_item_id} not found.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                                detail=f"Menu item not found.")
         
         order_item: OrderItem = OrderItem(menu_item_id=i.menu_item_id, quantity=i.quantity)
         items.append(order_item)

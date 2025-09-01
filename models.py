@@ -30,3 +30,4 @@ class OrderItem(SQLModel, table=True):
     menu_item: MenuItems = Relationship()
     quantity: int = 1
     orders: list["Order"] = Relationship(back_populates="items", link_model=OrderLinkingTable)
+    order_id: int | None = Field(foreign_key="order.id")
